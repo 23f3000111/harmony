@@ -1,0 +1,28 @@
+{
+  "name": "harmony",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Harmony: one calm place to run a home or an office.",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c blue,green \"npm run dev -w @harmony/server\" \"npm run dev -w @harmony/web\"",
+    "build": "npm run build -w @harmony/web && npm run build -w @harmony/server",
+    "start": "npm run start -w @harmony/server",
+    "test": "vitest run",
+    "typecheck": "tsc -p packages/shared --noEmit && tsc -p packages/server --noEmit && tsc -p packages/web --noEmit",
+    "db:generate": "npm run db:generate -w @harmony/server",
+    "db:reset": "npm run db:reset -w @harmony/server",
+    "build:pages": "npm run build:pages -w @harmony/web"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^4.1.0"
+  }
+}

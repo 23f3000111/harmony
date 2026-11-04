@@ -1,0 +1,277 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Procurement: royal to sky blue on ice. */
+  :root,
+  [data-edition='supply'] {
+    --brand-50: 238 245 255;
+    --brand-100: 217 232 255;
+    --brand-200: 188 214 255;
+    --brand-300: 142 188 255;
+    --brand-400: 89 150 251;
+    --brand-500: 51 115 244;
+    --brand-600: 31 88 224;
+    --brand-700: 26 70 194;
+    --brand-800: 27 60 154;
+    --brand-900: 28 54 122;
+    --brand-950: 20 34 74;
+    --accent: 56 189 248;
+    --ink: 10 29 55;
+    --ink-muted: 58 74 100;
+    --ink-soft: 103 119 145;
+    --canvas: 244 248 253;
+    --line: 225 233 244;
+    --shadow: 10 40 90;
+    --gradient-brand: linear-gradient(135deg, #1f58e0, #2f7cf6 55%, #38bdf8);
+    --gradient-ocean: linear-gradient(165deg, #0b3d7a, #1a5fd6 55%, #3aaef2);
+    --gradient-hero: linear-gradient(180deg, #072347, #0b3d7a 38%, #1a64d6 74%, #46b4f4);
+    --font-display: 'Plus Jakarta Sans Variable', system-ui, sans-serif;
+    --display-tracking: -0.04em;
+    --display-weight: 500;
+    --display-variation: normal;
+  }
+
+  /* Home: the brand's ivory, sage, olive and dusty blush. */
+  [data-edition='home'] {
+    --brand-50: 243 246 239;
+    --brand-100: 228 235 220;
+    --brand-200: 203 216 189;
+    --brand-300: 169 189 150;
+    --brand-400: 135 160 112;
+    --brand-500: 106 134 84;
+    --brand-600: 82 108 64;
+    --brand-700: 65 86 53;
+    --brand-800: 54 70 45;
+    --brand-900: 46 59 40;
+    --brand-950: 23 31 19;
+    --accent: 217 183 174;
+    --ink: 38 36 28;
+    --ink-muted: 84 81 69;
+    --ink-soft: 118 114 100;
+    --canvas: 248 245 239;
+    --line: 235 229 217;
+    --shadow: 60 56 30;
+    --gradient-brand: linear-gradient(135deg, #526c40, #6f8f58 55%, #a9bd78);
+    --gradient-ocean: linear-gradient(165deg, #2e3b28, #4f6a3d 55%, #8fa86a);
+    --gradient-hero: linear-gradient(170deg, #1c2617, #2f4026 40%, #4d6a3f 76%, #7b7a52);
+    --font-display: 'Fraunces Variable', Georgia, serif;
+    --display-tracking: -0.025em;
+    --display-weight: 500;
+    --display-variation: 'SOFT' 100;
+  }
+
+  /* HR: warm plum running into apricot, because this edition is about people. */
+  [data-edition='people'] {
+    --brand-50: 251 243 250;
+    --brand-100: 246 230 244;
+    --brand-200: 238 204 234;
+    --brand-300: 224 166 218;
+    --brand-400: 204 118 195;
+    --brand-500: 177 80 168;
+    --brand-600: 150 57 142;
+    --brand-700: 124 46 117;
+    --brand-800: 103 40 97;
+    --brand-900: 87 37 83;
+    --brand-950: 53 15 49;
+    --accent: 242 162 126;
+    --ink: 38 17 40;
+    --ink-muted: 79 57 80;
+    --ink-soft: 118 97 120;
+    --canvas: 251 247 251;
+    --line: 240 230 240;
+    --shadow: 70 20 70;
+    --gradient-brand: linear-gradient(135deg, #96398e, #c2558f 55%, #f2a27e);
+    --gradient-ocean: linear-gradient(165deg, #4a1650, #8a2f7f 55%, #e08a7d);
+    --gradient-hero: linear-gradient(170deg, #230a2b, #4a1650 40%, #7d2a74 76%, #b14d73);
+    --font-display: 'Bricolage Grotesque Variable', system-ui, sans-serif;
+    --display-tracking: -0.035em;
+    --display-weight: 600;
+    --display-variation: normal;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-padding-top: 88px;
+  }
+
+  body {
+    @apply bg-canvas font-sans text-body text-ink antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+    transition: background-color 0.5s ease;
+  }
+
+  h1, h2, h3, h4 {
+    text-wrap: balance;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--brand-500));
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: rgb(var(--brand-200));
+  }
+
+  /* Native date and select controls keep their system pickers, in the app's shape. */
+  input[type='date']::-webkit-calendar-picker-indicator {
+    opacity: 0.55;
+    cursor: pointer;
+  }
+}
+
+@layer components {
+  .font-display-set {
+    font-family: var(--font-display);
+    letter-spacing: var(--display-tracking);
+    font-weight: var(--display-weight);
+    font-variation-settings: var(--display-variation);
+  }
+
+  .page-title {
+    @apply text-[1.75rem] leading-[1.15] sm:text-[2rem];
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: calc(var(--display-tracking) + 0.01em);
+    font-variation-settings: var(--display-variation);
+  }
+
+  .card-title {
+    @apply text-[1.0625rem] font-semibold;
+    letter-spacing: -0.015em;
+  }
+
+  .banner-title {
+    font-family: var(--font-display);
+    font-weight: var(--display-weight);
+    font-size: clamp(2.1rem, 1.5rem + 2.2vw, 2.8rem);
+    line-height: 1.04;
+    letter-spacing: var(--display-tracking);
+    font-variation-settings: var(--display-variation);
+  }
+
+  .hint {
+    @apply text-hint text-ink-soft;
+  }
+
+  .card {
+    @apply rounded-card border border-line/70 bg-white shadow-card;
+  }
+
+  .tile {
+    @apply grid shrink-0 place-items-center rounded-tile;
+  }
+
+  .field {
+    @apply block h-11 w-full rounded-2xl border border-line bg-white px-4 text-[15px] text-ink transition-[border-color,box-shadow] duration-150 placeholder:text-ink-soft/70;
+  }
+  .field:focus {
+    @apply border-brand-400 outline-none ring-4 ring-brand-100;
+  }
+  .field[aria-invalid='true'] {
+    @apply border-coral-400 ring-coral-100;
+  }
+  textarea.field {
+    @apply h-auto min-h-[88px] py-3;
+  }
+  select.field {
+    @apply appearance-none bg-no-repeat pr-10;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23677791' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+    background-position: right 14px center;
+  }
+
+  .bg-brand-gradient {
+    background-image: var(--gradient-brand);
+  }
+  .bg-ocean {
+    background-image: var(--gradient-ocean);
+  }
+  .bg-hero {
+    background-image: var(--gradient-hero);
+  }
+
+  /* Every gradient surface gets a little film grain so colour bands don't show. */
+  .grain {
+    position: relative;
+    isolation: isolate;
+  }
+  .grain::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0.16;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .wash {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(60rem 34rem at 88% -8%, rgb(var(--brand-200) / 0.38), transparent 62%),
+      radial-gradient(44rem 28rem at 12% 8%, rgb(var(--brand-100) / 0.6), transparent 60%);
+    transition: opacity 0.4s ease;
+  }
+
+  .scroll-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--line)) transparent;
+  }
+
+  .skeleton {
+    @apply relative overflow-hidden rounded-xl bg-brand-50;
+  }
+  .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.75), transparent);
+    animation: shimmer 1.6s infinite;
+  }
+
+  /* Printing an order gives a clean document, with none of the app around it. */
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+    body,
+    .wash {
+      background: #fff !important;
+    }
+    .print-plain {
+      box-shadow: none !important;
+      border: none !important;
+      background: #fff !important;
+      color: #000 !important;
+    }
+  }
+}
+
+/* The theme sweep used when switching workspace. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-new(root) {
+  z-index: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
