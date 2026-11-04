@@ -53,8 +53,16 @@ import { requestDTOs } from './requests';
 import { escapeLike } from './tasks';
 import { loadMemberStats } from './workspaces';
 
-export async function loadActivity(db: DB, workspaceId: string, limit: number, offset = 0): Promise<ActivityDTO[]> {
-  const rows = await db.select().from(activity).where(eq(activity.workspaceId, workspaceId)).orderBy(desc(activity.createdAt)).limit(limit).offset(offset);
+export async function loadActivity(db: DB, workspaceId: string, limit: number, offset = 0, managerView = false): Promise<ActivityDTO[]> {
+  const conditions = [eq(activity.workspaceId, workspaceId)];
+  if (!managerView) conditions.push(eq(activity.audience, 'all'));
+  const rows = await db
+    .select()
+    .from(activity)
+    .where(and(...conditions))
+    .orderBy(desc(activity.createdAt))
+    .limit(limit)
+    .offset(offset);
   return rows.map((row) => ({
     id: row.id,
     actorName: row.actorName,
@@ -292,14 +300,18 @@ async function loadDashboard(deps: AppDeps, c: Ctx): Promise<DashboardDTO> {
     },
     timeline: { start: weekStart, tasks: timelineRows.map((task) => ({ ...task, dueOn: task.dueOn! })) },
     stock: { shelf: pickShelf(itemList), lowCount, itemCount: itemList.length, runningOut, useFirst },
-    restock: { openCount: restock.length, estCents: restock.reduce((sum, entry) => sum + entry.estCostCents, 0), top: restock.slice(0, 6) },
+    restock: {
+      openCount: restock.length,
+      estCents: showMoney ? restock.reduce((sum, entry) => sum + entry.estCostCents, 0) : 0,
+      top: restock.slice(0, 6).map((entry) => (showMoney ? entry : { ...entry, estCostCents: 0, actualCostCents: null })),
+    },
     money,
     meals: mealsData,
     requests: requestsData,
     orders: ordersData,
     checklist: allChecklists.find((list) => list.cadence !== 'once') ?? allChecklists[0] ?? null,
     upcoming: upcoming.sort((a, b) => a.date.localeCompare(b.date) || (a.time ?? '').localeCompare(b.time ?? '')).slice(0, 8),
-    activity: await loadActivity(db, workspace.id, 8),
+    activity: await loadActivity(db, workspace.id, 8, 0, manager),
   };
 }
 
@@ -467,7 +479,7 @@ export function insightRoutes(deps: AppDeps) {
   r.get('/activity', async (c) => {
     const limit = Math.min(Number(c.req.query('limit')) || 30, 100);
     const offset = Math.max(Number(c.req.query('offset')) || 0, 0);
-    return c.json({ activity: await loadActivity(db, c.get('workspace').id, limit, offset) });
+    return c.json({ activity: await loadActivity(db, c.get('workspace').id, limit, offset, canManage(c.get('member').role)) });
   });
 
   r.get('/search', async (c) => {

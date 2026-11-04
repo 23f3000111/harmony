@@ -88,6 +88,54 @@ describe('roles', () => {
     expect(detail.body.workspace.boardToken).toBeUndefined();
   });
 
+  it('keeps prices and spend out of everything a member can load', async () => {
+    const owner = await signUp(h);
+    const space = await workspace(owner.agent, 'supply');
+    const member = await joinAs(h, owner.agent, space.id, 'member');
+    const base = `/api/w/${space.id}`;
+    const supplier = await owner.agent.post(`${base}/suppliers`, { name: 'Mesra' });
+    const item = await owner.agent.post(`${base}/items`, { name: 'Boxes', quantity: 1, minQty: 5, targetQty: 20, unitCostCents: 3800, supplierId: supplier.body.id });
+    const order = await owner.agent.post(`${base}/orders`, { supplierId: supplier.body.id, lines: [{ itemId: item.body.id, description: 'Boxes', qty: 2, unitCostCents: 3800 }] });
+    await owner.agent.post(`${base}/orders/${order.body.order.id}/send`);
+    await owner.agent.post(`${base}/orders/${order.body.order.id}/receive`, { lines: [{ lineId: order.body.order.lines[0].id, qty: 2 }] });
+
+    expect((await owner.agent.get(`${base}/items`)).body.items[0].unitCostCents).toBe(3800);
+    expect((await owner.agent.get(`${base}/restock`)).body.entries[0].estCostCents).toBeGreaterThan(0);
+    expect((await owner.agent.get(`${base}/suppliers`)).body.suppliers[0].spentCents).toBe(7600);
+
+    const items = (await member.agent.get(`${base}/items`)).body.items;
+    expect(items[0].unitCostCents).toBe(0);
+    expect(items[0].forecast.suggestedCostCents).toBe(0);
+    expect((await member.agent.get(`${base}/restock`)).body.entries.every((entry: any) => entry.estCostCents === 0 && entry.actualCostCents === null)).toBe(true);
+    expect((await member.agent.get(`${base}/suppliers`)).body.suppliers[0].spentCents).toBe(0);
+    const dashboard = (await member.agent.get(`${base}/dashboard`)).body;
+    expect(dashboard.restock.estCents).toBe(0);
+    expect(dashboard.restock.top.every((entry: any) => entry.estCostCents === 0)).toBe(true);
+  });
+
+  it('leaves money, orders and other people’s requests out of a member’s activity feed', async () => {
+    const owner = await signUp(h, 'Owner');
+    const space = await workspace(owner.agent, 'people');
+    const member = await joinAs(h, owner.agent, space.id, 'member', 'Staff');
+    const base = `/api/w/${space.id}`;
+    await owner.agent.post(`${base}/money/expenses`, { title: 'Secret bonus dinner', category: 'Other', amountCents: 99900, spentOn: space.today });
+    await owner.agent.post(`${base}/bills`, { name: 'Office rent', amountCents: 500000, dueOn: space.today, recurrence: 'monthly' });
+    const colleague = await joinAs(h, owner.agent, space.id, 'member', 'Colleague');
+    await colleague.agent.post(`${base}/requests`, { kind: 'other', title: 'Private request' });
+    await owner.agent.post(`${base}/tasks`, { title: 'Visible job' });
+
+    const seen = (await member.agent.get(`${base}/activity`)).body.activity.map((row: any) => row.summary).join(' | ');
+    expect(seen).toContain('Visible job');
+    expect(seen).not.toContain('Secret bonus dinner');
+    expect(seen).not.toContain('Office rent');
+    expect(seen).not.toContain('Private request');
+    expect(JSON.stringify((await member.agent.get(`${base}/dashboard`)).body.activity)).not.toContain('Secret bonus dinner');
+
+    const managerView = (await owner.agent.get(`${base}/activity`)).body.activity.map((row: any) => row.summary).join(' | ');
+    expect(managerView).toContain('Secret bonus dinner');
+    expect(managerView).toContain('Private request');
+  });
+
   it('stops members changing stock levels, people or settings, but lets them record usage', async () => {
     const owner = await signUp(h);
     const space = await workspace(owner.agent, 'home');

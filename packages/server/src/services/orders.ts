@@ -137,7 +137,11 @@ export async function receiveOrder(
 
       let category: string | null = null;
       if (line.itemId) {
-        const [item] = await tx.select().from(items).where(eq(items.id, line.itemId)).limit(1);
+        const [item] = await tx
+          .select()
+          .from(items)
+          .where(and(eq(items.id, line.itemId), eq(items.workspaceId, workspace.id)))
+          .limit(1);
         if (item) {
           category = item.category;
           await changeStock(tx, item, { delta: entry.qty, reason: 'received', memberId: actorId, note: orderNumber(order.number) });

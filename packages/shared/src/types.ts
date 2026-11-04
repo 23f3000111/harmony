@@ -447,6 +447,8 @@ export interface RealtimeEvent {
   actorName: string | null;
   summary: string | null;
   at: string;
+  /** Set when only managers may see who did what. */
+  audience?: 'managers';
 }
 
 export interface ApiErrorBody {

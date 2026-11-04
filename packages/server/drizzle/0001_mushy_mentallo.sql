@@ -1,0 +1,1 @@
+ALTER TABLE "activity" ADD COLUMN "audience" text DEFAULT 'all' NOT NULL;

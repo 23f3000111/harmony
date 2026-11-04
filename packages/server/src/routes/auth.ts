@@ -35,10 +35,21 @@ export function userDTO(user: UserRow): UserDTO {
   };
 }
 
-/** Only ever redirect back into this app, never to another site. */
-function safeNext(next: string | undefined): string | null {
-  if (!next || !next.startsWith('/') || next.startsWith('//') || next.includes('\\')) return null;
-  return next;
+/**
+ * Only ever redirect back into this app. Browsers drop tabs and newlines and read backslashes as slashes,
+ * so "/\t/evil.com" would become "//evil.com". Anything like that is refused, then the result is
+ * parsed the way a browser would and must still land on this app's own address.
+ */
+export function safeNext(next: string | undefined | null, appUrl: string): string | null {
+  if (!next || !next.startsWith('/') || next.startsWith('//') || /[\u0000-\u001f\u007f\s\\]/.test(next)) return null;
+  try {
+    const base = new URL(appUrl);
+    const target = new URL(next, base);
+    if (target.origin !== base.origin) return null;
+    return `${target.pathname}${target.search}${target.hash}`;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -187,7 +198,7 @@ export function authRoutes(deps: AppDeps) {
   // Google sign-in
 
   r.get('/google', (c) => {
-    const next = safeNext(c.req.query('next'));
+    const next = safeNext(c.req.query('next'), env.appUrl);
     if (!deps.google) {
       if (env.demoMode) return c.redirect(`/auth/google-demo${next ? `?next=${encodeURIComponent(next)}` : ''}`);
       return c.redirect('/login?error=google_unavailable');
@@ -207,7 +218,7 @@ export function authRoutes(deps: AppDeps) {
     const state = getCookie(c, 'g_state');
     const codeVerifier = getCookie(c, 'g_verifier');
     const nonce = getCookie(c, 'g_nonce');
-    const next = safeNext(getCookie(c, 'g_next'));
+    const next = safeNext(getCookie(c, 'g_next'), env.appUrl);
     for (const name of ['g_state', 'g_verifier', 'g_nonce', 'g_next']) deleteCookie(c, name, { path: GOOGLE_COOKIE_PATH });
 
     const code = c.req.query('code');

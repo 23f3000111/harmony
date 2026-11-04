@@ -1,6 +1,6 @@
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
-import { adjustInput, boughtInput, itemInput, itemUpdate, restockInput, restockUpdate, type MovementDTO } from '@harmony/shared';
+import { adjustInput, boughtInput, canSeeMoney, itemInput, itemUpdate, restockInput, restockUpdate, type MovementDTO } from '@harmony/shared';
 import { announceFrom, idParam, needManager, readBody, type AppDeps, type AppEnv, type Ctx } from '../context';
 import type { DB } from '../db/types';
 import { items, members, restockEntries, stockMovements, suppliers } from '../db/schema';
@@ -33,7 +33,8 @@ export function itemRoutes(deps: AppDeps) {
 
   r.get('/', async (c) => {
     const list = await loadItems(db, c.get('workspace'), c.get('today'), deps.now());
-    return c.json({ items: list });
+    if (canSeeMoney(c.get('member').role)) return c.json({ items: list });
+    return c.json({ items: list.map((item) => ({ ...item, unitCostCents: 0, forecast: { ...item.forecast, suggestedCostCents: 0 } })) });
   });
 
   r.post('/', async (c) => {
@@ -133,7 +134,9 @@ export function restockRoutes(deps: AppDeps) {
 
   r.get('/', async (c) => {
     const workspace = c.get('workspace');
-    return c.json({ entries: await loadRestock(db, workspace.id, c.get('today'), workspace.timezone) });
+    const entries = await loadRestock(db, workspace.id, c.get('today'), workspace.timezone);
+    if (canSeeMoney(c.get('member').role)) return c.json({ entries });
+    return c.json({ entries: entries.map((entry) => ({ ...entry, estCostCents: 0, actualCostCents: null })) });
   });
 
   r.post('/', async (c) => {

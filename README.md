@@ -76,7 +76,7 @@ Health checks: `GET /healthz` (process up) and `GET /readyz` (database reachable
 ## Tests
 
 ```bash
-npm test            # 120 tests: date and repeat rules, forecasting, sign-in, Google token checks, roles, every workflow
+npm test            # 125 tests: date and repeat rules, forecasting, sign-in, Google token checks, roles, every workflow
 npm run typecheck
 ```
 

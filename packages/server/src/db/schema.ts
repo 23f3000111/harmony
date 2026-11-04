@@ -413,6 +413,8 @@ export const activity = pgTable(
     actorName: text('actor_name'),
     summary: text('summary').notNull(),
     objectType: text('object_type').notNull(),
+    /** "managers" keeps money, orders and other people's requests out of members' feeds. */
+    audience: text('audience').$type<'all' | 'managers'>().notNull().default('all'),
     objectId: uuid('object_id'),
     createdAt: created(),
   },

@@ -197,11 +197,33 @@ describe('Google sign-in', () => {
   });
 
   it('returns only to addresses inside the app', async () => {
+    for (const next of ['//evil.example.org', '/\t/evil.example.org', '/\n/evil.example.org', '/\\evil.example.org', 'https://evil.example.org']) {
+      const agent = h.agent();
+      const start = await agent.get(`/api/auth/google?next=${encodeURIComponent(next)}`);
+      const state = new URL(start.headers.get('location')!).searchParams.get('state')!;
+      const reply = await agent.get(`/api/auth/google/callback?code=abc&state=${state}`);
+      expect(reply.headers.get('location'), JSON.stringify(next)).toBe('/');
+    }
+  });
+
+  it('keeps a safe return address, query and all', async () => {
     const agent = h.agent();
-    const start = await agent.get('/api/auth/google?next=//evil.example.org');
+    const start = await agent.get(`/api/auth/google?next=${encodeURIComponent('/invite/abc?x=1')}`);
     const state = new URL(start.headers.get('location')!).searchParams.get('state')!;
     const reply = await agent.get(`/api/auth/google/callback?code=abc&state=${state}`);
-    expect(reply.headers.get('location')).toBe('/');
+    expect(reply.headers.get('location')).toBe('/invite/abc?x=1');
+  });
+});
+
+describe('return addresses', () => {
+  it('only accepts paths on the app’s own origin', async () => {
+    const { safeNext } = await import('../src/routes/auth');
+    const app = 'https://harmony.example.com';
+    expect(safeNext('/w/1/tasks?view=today', app)).toBe('/w/1/tasks?view=today');
+    expect(safeNext('/%2F%2Fevil.example.org', app)).toBe('/%2F%2Fevil.example.org');
+    for (const bad of ['//evil.example.org', '/\t/evil.example.org', '/\r\n/evil.example.org', '/\\evil.example.org', '/ /evil.example.org', 'evil.example.org', '', null, undefined]) {
+      expect(safeNext(bad, app), JSON.stringify(bad)).toBeNull();
+    }
   });
 });
 

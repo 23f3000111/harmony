@@ -1,5 +1,6 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { addDays, anchorDayOf, monthKey, addMonths, spendCategoryForItem, startOfWeek, todayIn, type DemoAccount, type Edition, type Priority, type Recurrence, type Role } from '@harmony/shared';
+import { audienceFor } from '../context';
 import type { DB } from '../db/types';
 import {
   activity,
@@ -332,6 +333,7 @@ async function addActivity(seed: Seed, workspaceId: string, ids: Map<string, str
       actorName: names.get(who),
       summary,
       objectType,
+      audience: audienceFor(objectType),
       createdAt: new Date(seed.now.getTime() - minutesAgo * 60_000),
     })),
   );

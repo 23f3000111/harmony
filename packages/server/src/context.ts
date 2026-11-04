@@ -182,8 +182,13 @@ interface ChangeNote {
   objectId?: string | null;
 }
 
+/** Members never see money, orders or other people's requests, and that includes the activity feed. */
+const MANAGER_ONLY = new Set(['request', 'bill', 'expense', 'budget', 'order', 'supplier']);
+export const audienceFor = (objectType: string | undefined): 'all' | 'managers' => (objectType && MANAGER_ONLY.has(objectType) ? 'managers' : 'all');
+
 /** Records a change in the activity feed and tells every open screen to refresh those areas. */
 export async function announce(deps: AppDeps, workspaceId: string, actor: { id: string; name: string } | null, note: ChangeNote) {
+  const audience = audienceFor(note.objectType);
   if (note.summary) {
     await deps.db.insert(activity).values({
       workspaceId,
@@ -192,6 +197,7 @@ export async function announce(deps: AppDeps, workspaceId: string, actor: { id: 
       summary: note.summary,
       objectType: note.objectType ?? 'other',
       objectId: note.objectId ?? null,
+      audience,
     });
   }
   deps.bus.publish(workspaceId, {
@@ -200,6 +206,7 @@ export async function announce(deps: AppDeps, workspaceId: string, actor: { id: 
     actorName: actor?.name ?? null,
     summary: note.summary ?? null,
     at: deps.now().toISOString(),
+    ...(audience === 'managers' ? { audience } : {}),
   });
 }
 

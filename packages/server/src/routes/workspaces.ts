@@ -280,10 +280,13 @@ export function workspaceRoutes(deps: AppDeps) {
   /** Live updates for this workspace. */
   r.get('/stream', (c) => {
     const workspaceId = c.get('workspace').id;
+    const manager = canManage(c.get('member').role);
     return streamSSE(c, async (stream) => {
       let closed = false;
       const unsubscribe = deps.bus.subscribe(workspaceId, (event) => {
-        void stream.writeSSE({ event: 'change', data: JSON.stringify(event) }).catch(() => undefined);
+        // Members still get told to refresh, just not who did what with money or requests.
+        const visible = event.audience === 'managers' && !manager ? { ...event, actorId: null, actorName: null, summary: null } : event;
+        void stream.writeSSE({ event: 'change', data: JSON.stringify(visible) }).catch(() => undefined);
       });
       stream.onAbort(() => {
         closed = true;

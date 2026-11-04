@@ -217,6 +217,22 @@ describe('purchase orders', () => {
     expect((await owner.agent.post(`${base}/orders/${another.body.order.id}/cancel`)).status).toBe(409);
   });
 
+  it('refuses stock items from another company on an order, so receiving can’t change their stock', async () => {
+    const mine = await supplySpace();
+    const theirs = await supplySpace();
+    const foreignLine = [{ itemId: theirs.itemId, description: 'Their boxes', qty: 5, unitCostCents: 100 }];
+
+    const created = await mine.owner.agent.post(`${mine.base}/orders`, { supplierId: mine.supplierId, lines: foreignLine });
+    expect(created.status).toBe(404);
+
+    const draft = await draftOrder(mine.owner.agent, mine.base, mine.supplierId, mine.itemId);
+    const patched = await mine.owner.agent.patch(`${mine.base}/orders/${draft.body.order.id}`, { lines: foreignLine });
+    expect(patched.status).toBe(404);
+
+    const theirStock = (await theirs.owner.agent.get(`${theirs.base}/items`)).body.items[0];
+    expect(theirStock.quantity).toBe(10);
+  });
+
   it('won’t change lines after sending', async () => {
     const { owner, base, supplierId, itemId } = await supplySpace();
     const order = await draftOrder(owner.agent, base, supplierId, itemId);

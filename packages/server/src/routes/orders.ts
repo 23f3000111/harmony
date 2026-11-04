@@ -1,6 +1,6 @@
-import { and, asc, eq, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
-import { addDays, orderInput, orderUpdate, receiveInput, supplierInput, supplierUpdate, type SupplierDTO } from '@harmony/shared';
+import { addDays, canSeeMoney, orderInput, orderUpdate, receiveInput, supplierInput, supplierUpdate, type SupplierDTO } from '@harmony/shared';
 import { announceFrom, idParam, needFeature, needManager, readBody, type AppDeps, type AppEnv, type Ctx } from '../context';
 import { items, purchaseOrderLines, purchaseOrders, requests, suppliers } from '../db/schema';
 import { conflict, notFound } from '../errors';
@@ -55,6 +55,7 @@ export function supplierRoutes(deps: AppDeps) {
       .groupBy(purchaseOrders.supplierId);
 
     const spend = new Map(spendRows.map((row) => [row.supplierId, Number(row.spent)]));
+    const showMoney = canSeeMoney(c.get('member').role);
     const counts = new Map(orderCounts.map((row) => [row.supplierId, row]));
     const list: SupplierDTO[] = rows.map((row) => {
       const count = counts.get(row.id);
@@ -71,7 +72,7 @@ export function supplierRoutes(deps: AppDeps) {
         notes: row.notes,
         ordersReceived: received,
         onTimePercent: received ? Math.round((Number(count!.onTime) / received) * 100) : null,
-        spentCents: Math.round(spend.get(row.id) ?? 0),
+        spentCents: showMoney ? Math.round(spend.get(row.id) ?? 0) : 0,
       };
     });
     return c.json({ suppliers: list });
@@ -136,6 +137,17 @@ export function orderRoutes(deps: AppDeps) {
     return supplier;
   };
 
+  /** Every stock item on an order must belong to this workspace, or receiving it would change someone else's stock. */
+  const assertItems = async (c: Ctx, lines: { itemId?: string | null }[]) => {
+    const ids = [...new Set(lines.map((line) => line.itemId).filter((id): id is string => Boolean(id)))];
+    if (ids.length === 0) return;
+    const found = await db
+      .select({ id: items.id })
+      .from(items)
+      .where(and(eq(items.workspaceId, c.get('workspace').id), inArray(items.id, ids)));
+    if (found.length !== ids.length) throw notFound('That item');
+  };
+
   r.get('/', async (c) => c.json({ orders: await loadOrders(db, c.get('workspace').id) }));
 
   r.get('/:id', async (c) => {
@@ -147,6 +159,7 @@ export function orderRoutes(deps: AppDeps) {
   r.post('/', async (c) => {
     const input = await readBody(c, orderInput);
     await assertSupplier(c as Ctx, input.supplierId);
+    await assertItems(c as Ctx, input.lines);
     const workspace = c.get('workspace');
     if (input.requestId) {
       const [request] = await db
@@ -167,6 +180,7 @@ export function orderRoutes(deps: AppDeps) {
     const order = await load(c as Ctx);
     const input = await readBody(c, orderUpdate);
     if (input.lines && order.status !== 'draft') throw conflict('Lines can only change while the order is a draft.');
+    if (input.lines) await assertItems(c as Ctx, input.lines);
     await db.transaction(async (tx) => {
       await tx
         .update(purchaseOrders)

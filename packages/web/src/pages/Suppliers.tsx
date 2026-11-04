@@ -14,7 +14,7 @@ import { Avatar, PageHeader } from '@/ui/Primitives';
 import { EmptyState, ListSkeleton, Loaded } from '@/ui/States';
 
 export default function Suppliers() {
-  const { isManager, workspace, path } = useWorkspace();
+  const { isManager, workspace, path, showMoney } = useWorkspace();
   const navigate = useNavigate();
   const query = useSuppliers();
   const [editing, setEditing] = useState<SupplierDTO | null | 'new'>(null);
@@ -55,7 +55,7 @@ export default function Suppliers() {
                     </div>
                     <div className="mt-5 grid grid-cols-3 gap-2">
                       <Stat label="On time" value={rate === null ? '—' : `${rate}%`} tone={rate === null ? undefined : rate >= 85 ? 'good' : rate >= 65 ? 'warn' : 'bad'} />
-                      <Stat label="Spent" value={money(supplier.spentCents, workspace.currency, { compact: true })} />
+                      <Stat label="Spent" value={showMoney ? money(supplier.spentCents, workspace.currency, { compact: true }) : '—'} />
                       <Stat label="Delivers in" value={`${supplier.leadTimeDays} d`} />
                     </div>
                     {rate !== null && (
